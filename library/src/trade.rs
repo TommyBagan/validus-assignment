@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, time::Instant};
+use std::marker::PhantomData;
 
 use chrono::{DateTime, Utc};
 use iso_currency::Currency;
@@ -82,7 +82,8 @@ impl<S: TradeState> TradeDetails<S> {
         }
     }
 
-    pub fn new(user: &User<Requester>,
+    pub fn new(
+        user: &User<Requester>,
         counterparty: Counterparty,
         direction: Direction,
         style: Style,
@@ -90,14 +91,15 @@ impl<S: TradeState> TradeDetails<S> {
         amount: u128,
         underlying: Vec<Currency>,
         value_date: DateTime<Utc>,
-        delivery_date: DateTime<Utc>
+        delivery_date: DateTime<Utc>,
     ) -> Result<TradeDetails<Draft>, ()> {
         let trade_date = Utc::now();
 
         if value_date < trade_date
-        || delivery_date < trade_date
-        || delivery_date < value_date 
-        || !underlying.contains(&currency){
+            || delivery_date < trade_date
+            || delivery_date < value_date
+            || !underlying.contains(&currency)
+        {
             // TODO: Implement appropriate errors.
             return Err(());
         }
