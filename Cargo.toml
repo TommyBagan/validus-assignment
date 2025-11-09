@@ -1,0 +1,15 @@
+[workspace]
+resolver = "3"
+members = [
+    "library",
+    "server"
+]
+
+[workspace.package]
+version = "0.0.1"
+authors = [
+    "Tommy Bagan"
+]
+edition = "2024"
+
+[workspace.dependencies]
