@@ -96,7 +96,8 @@ impl<S: TradeState> TradeDetails<S> {
 
         if value_date < trade_date
         || delivery_date < trade_date
-        || delivery_date < value_date {
+        || delivery_date < value_date 
+        || !underlying.contains(&currency){
             // TODO: Implement appropriate errors.
             return Err(());
         }
