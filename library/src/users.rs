@@ -5,7 +5,7 @@ use std::{
 
 use crate::{state::TradeState, trade::TradeDetails};
 
-trait Permission: Debug + PartialEq + Eq {}
+pub trait Permission: Debug + PartialEq + Eq {}
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub struct Requester;
