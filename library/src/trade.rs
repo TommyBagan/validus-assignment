@@ -57,8 +57,8 @@ pub struct MutTradeDetails {
     pub delivery_date: DateTime<Utc>,
 }
 
-#[derive(Debug, Default)]
-pub(crate) struct TradeDetailsDiff {
+#[derive(Debug, Default, Clone)]
+pub struct TradeDetailsDiff {
     pub(crate) counterparty: Option<(Counterparty, Counterparty)>,
 
     pub(crate) direction: Option<(Direction, Direction)>,
@@ -79,6 +79,42 @@ pub(crate) struct TradeDetailsDiff {
 }
 
 impl TradeDetailsDiff {
+    pub fn changed_counterparty(&self) -> Option<&(Counterparty, Counterparty)> {
+        self.counterparty.as_ref()
+    }
+
+    pub fn changed_direction(&self) -> Option<&(Direction, Direction)> {
+        self.direction.as_ref()
+    }
+
+    pub fn changed_style(&self) -> Option<&(Style, Style)> {
+        self.style.as_ref()
+    }
+
+    pub fn changed_currency(&self) -> Option<&(Currency, Currency)> {
+        self.notional_currency.as_ref()
+    }
+
+    pub fn changed_amount(&self) -> Option<(u128,u128)> {
+        self.notional_amount
+    }
+
+    pub fn changed_underlying(&self) -> Option<&(Vec<Currency>, Vec<Currency>)> {
+        self.underlying.as_ref()
+    }
+
+    pub fn changed_value_date(&self) -> Option<&(DateTime<Utc>, DateTime<Utc>)> {
+        self.value_date.as_ref()
+    }
+
+    pub fn changed_delivery_date(&self) -> Option<&(DateTime<Utc>,DateTime<Utc>)> {
+        self.delivery_date.as_ref()
+    }
+
+    pub fn changed_strike(&self) -> Option<u128> {
+        self.strike
+    }
+
     pub(crate) fn new<From: TradeState, To: TradeState>(
         from_details: &TradeDetails<From>,
         to_details: &TradeDetails<To>
@@ -298,7 +334,7 @@ impl TradeDetails<SentToCounterparty> {
 }
 
 #[cfg(test)]
-mod tests {
+pub (crate) mod tests {
     use std::{ time::Duration };
 
     use super::*;
@@ -344,7 +380,7 @@ mod tests {
         }
     }
 
-    fn mock_draft(requester: &User<Requester>) -> TradeDetails<Draft> {
+    pub (crate) fn mock_draft(requester: &User<Requester>) -> TradeDetails<Draft> {
         let offset: Duration = Duration::from_secs(20);
         let value_date: DateTime<Utc> = Utc::now() + offset;
         let delivery_date: DateTime<Utc> = value_date + offset;

@@ -105,7 +105,7 @@ impl TradeState for Cancelled {
     const NAME: &'static str = "Cancelled";
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum TradeAction {
     Cancel,
     Submit,
@@ -128,33 +128,5 @@ impl ToString for TradeAction {
             TradeAction::Book => "book",
         };
         x.to_string()
-    }
-}
-
-#[derive(Debug)]
-pub(crate) struct HistoricalRecord {
-    timestamp: DateTime<Utc>,
-    action: TradeAction,
-    user_id: String,
-    state_before: &'static str,
-    state_after: &'static str,
-    difference: Option<TradeDetailsDiff>,
-}
-
-impl HistoricalRecord {
-    pub(crate) fn new<From: TradeState, To: TradeState, U: Transitioner>(
-        action: TradeAction,
-        id: String,
-        from: &TradeDetails<From>,
-        to: &TradeDetails<To>
-    ) -> Self {
-        Self {
-            timestamp: Utc::now(),
-            action: action,
-            user_id: id,
-            state_before: From::NAME,
-            state_after: To::NAME,
-            difference: TradeDetailsDiff::new(from, to),
-        }
     }
 }
