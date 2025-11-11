@@ -88,6 +88,7 @@ impl<S: TradeState> TradeDetails<S> {
         }
     }
 
+    /// Common checks that need to be made on every mutation.
     fn check_details(&self, mut_details: &MutTradeDetails) -> Result<(), InvalidDetails> {
         if
             mut_details.value_date < self.trade_date ||
@@ -147,7 +148,6 @@ impl<S: TradeState> TradeDetails<S> {
 
         details.check_details(&details.mutable_details)?;
 
-        // TODO: Log History
         Ok(details)
     }
 

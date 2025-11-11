@@ -104,7 +104,6 @@ impl TradeState for Cancelled {
 
 #[derive(Debug)]
 pub enum TradeAction {
-    Draft,
     Cancel,
     Submit,
     Accept,
@@ -117,7 +116,6 @@ pub enum TradeAction {
 impl ToString for TradeAction {
     fn to_string(&self) -> String {
         let x: &str = match self {
-            TradeAction::Draft => "draft",
             TradeAction::Cancel => "cancel",
             TradeAction::Submit => "submit",
             TradeAction::Accept => "accept",
