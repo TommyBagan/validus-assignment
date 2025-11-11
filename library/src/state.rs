@@ -3,7 +3,7 @@ use std::fmt::{ Debug, Display };
 use chrono::{ DateTime, Utc };
 
 use crate::{
-    trade::{ MutTradeDetailsDiff, TradeDetails, TradeDetailsDiff },
+    trade::{ TradeDetails, TradeDetailsDiff },
     users::{ Transitioner, User },
 };
 
@@ -141,7 +141,7 @@ pub(crate) struct HistoricalRecord {
     user_id: String,
     state_before: &'static str,
     state_after: &'static str,
-    difference: Option<MutTradeDetailsDiff>,
+    difference: Option<TradeDetailsDiff>,
 }
 
 impl HistoricalRecord {
