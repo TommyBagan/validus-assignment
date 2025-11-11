@@ -2,10 +2,7 @@ use std::fmt::{ Debug, Display };
 
 use chrono::{ DateTime, Utc };
 
-use crate::{
-    trade::{ TradeDetails, TradeDetailsDiff },
-    users::{ Transitioner, User },
-};
+use crate::{ trade::{ TradeDetails, TradeDetailsDiff }, users::{ Transitioner, User } };
 
 /// This trait is a marker trait, that acts as our for
 /// our generic for the type state pattern.
