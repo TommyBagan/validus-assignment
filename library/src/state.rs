@@ -100,3 +100,32 @@ impl Display for Cancelled {
 impl TradeState for Cancelled {
     const NAME: &'static str = "Cancelled";
 }
+
+
+#[derive(Debug)]
+pub enum TradeAction {
+    Draft,
+    Cancel,
+    Submit,
+    Accept,
+    Update,
+    Approve,
+    SendToExecute,
+    Book
+}
+
+impl ToString for TradeAction {
+    fn to_string(&self) -> String {
+        let x: &str = match self {
+            TradeAction::Draft => "draft",
+            TradeAction::Cancel => "cancel",
+            TradeAction::Submit => "submit",
+            TradeAction::Accept => "accept",
+            TradeAction::Update => "update",
+            TradeAction::Approve => "approve",
+            TradeAction::SendToExecute => "send to execute",
+            TradeAction::Book => "book",
+        };
+        x.to_string()
+    }
+}
