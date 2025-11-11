@@ -2,6 +2,7 @@ use std::{ fmt::{ Debug, Display }, marker::PhantomData };
 
 use crate::{
     error::UnauthorisedRequester,
+    history::{ HISTORY, HistoricalRecord },
     state::{ TradeAction, TradeState },
     trade::TradeDetails,
 };
@@ -69,9 +70,19 @@ impl Transitioner for User<Requester> {
                 _state: PhantomData,
             });
         }
+        let old_details: TradeDetails<From> = details.clone();
         mutation(&mut details);
-        Ok(details.force_transition::<To>())
-        // TODO: Log history
+        let new_details: TradeDetails<To> = details.force_transition::<To>();
+        let record: HistoricalRecord = HistoricalRecord::new(
+            action,
+            self.id.clone(),
+            &old_details,
+            &new_details
+        );
+        {
+            HISTORY.lock().unwrap().add_record(record);
+        }
+        Ok(new_details)
     }
 }
 
@@ -84,8 +95,18 @@ impl Transitioner for User<Approver> {
         mutation: impl FnOnce(&mut TradeDetails<From>) -> (),
         action: TradeAction
     ) -> Self::TransitionResult<From, To> {
+        let old_details: TradeDetails<From> = details.clone();
         mutation(&mut details);
-        details.force_transition::<To>()
-        // TODO: Log history
+        let new_details: TradeDetails<To> = details.force_transition::<To>();
+        let record: HistoricalRecord = HistoricalRecord::new(
+            action,
+            self.id.clone(),
+            &old_details,
+            &new_details
+        );
+        {
+            HISTORY.lock().unwrap().add_record(record);
+        }
+        new_details
     }
 }

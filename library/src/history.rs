@@ -1,11 +1,7 @@
-use std::{ ffi::os_str::Display, sync::{ LazyLock, Mutex } };
+use std::{ sync::{ LazyLock, Mutex } };
 use chrono::{ DateTime, Utc };
 
-use crate::{
-    state::{ TradeAction, TradeState },
-    trade::{ TradeDetails, TradeDetailsDiff },
-    users::{ Transitioner, User },
-};
+use crate::{ state::{ TradeAction, TradeState }, trade::{ TradeDetails, TradeDetailsDiff } };
 
 /// LazyLock static which is evaluated lazily, meaning: first .lock() will
 /// create the initial TradeHistory table.
@@ -106,11 +102,29 @@ impl HistoricalRecord {
     }
 }
 
+pub fn get_historical_record(step: usize) -> Option<HistoricalRecord> {
+    HISTORY.lock().unwrap().get_record(step)
+}
+
+pub fn total_historical_record_count() -> usize {
+    HISTORY.lock().unwrap().total_record_count()
+}
+
 #[cfg(test)]
 mod tests {
     use chrono::{ DateTime, Utc };
 
-    use crate::{ history::{ HISTORY, HistoricalRecord }, state::Draft, users::{ Requester, User } };
+    use crate::{
+        history::{
+            HISTORY,
+            HistoricalRecord,
+            get_historical_record,
+            total_historical_record_count,
+        },
+        state::{ Draft, NeedsReapproval, PendingApproval, TradeAction },
+        trade::{ Direction, MutTradeDetails, TradeDetails },
+        users::{ Approver, Requester, User },
+    };
 
     #[test]
     fn adding_records_to_lazy_history() {
@@ -132,5 +146,48 @@ mod tests {
         assert_eq!(our_history.total_record_count(), 1);
         assert!(our_history.get_record(0).is_some());
         assert!(our_history.get_record(1).is_none());
+    }
+
+    #[test]
+    #[ignore = "This test is only reliable when ran in a single thread."]
+    fn update_history() {
+        {
+            HISTORY.lock().unwrap().clear();
+        }
+
+        // Draft
+        let requester: User<Requester> = User::sign_in("TestUser");
+        let details: TradeDetails<Draft> = crate::trade::tests::mock_draft(&requester);
+
+        // Submit
+        let wrapped_details: Result<TradeDetails<PendingApproval>, _> = details.submit(&requester);
+        assert!(wrapped_details.is_ok());
+        let details: TradeDetails<PendingApproval> = wrapped_details.unwrap();
+
+        // Test the history API for Submit
+        assert_eq!(total_historical_record_count(), 1);
+        assert!(get_historical_record(0).is_some());
+        let record: HistoricalRecord = get_historical_record(0).unwrap();
+        assert_eq!(record.action, TradeAction::Submit);
+        assert!(record.difference.is_none());
+
+        // Update
+        let approver: User<Approver> = User::sign_in("Admin");
+        let mut new_details: MutTradeDetails = details.grab_mut_details();
+        new_details.direction = Direction::SELL;
+        let wrapped_details: Result<TradeDetails<NeedsReapproval>, _> = details.update(
+            &approver,
+            new_details
+        );
+        assert!(wrapped_details.is_ok());
+        let _: TradeDetails<NeedsReapproval> = wrapped_details.unwrap();
+
+        // Test the history API for Update
+        assert_eq!(total_historical_record_count(), 2);
+        assert!(get_historical_record(0).is_some());
+        let record: HistoricalRecord = get_historical_record(1).unwrap();
+        assert_eq!(record.action, TradeAction::Update);
+        assert_eq!(record.user_id, approver.to_string());
+        assert!(record.changes().is_some());
     }
 }

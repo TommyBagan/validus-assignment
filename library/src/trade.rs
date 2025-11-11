@@ -257,6 +257,18 @@ impl<S: TradeState> TradeDetails<S> {
     }
 }
 
+impl<S: TradeState> Clone for TradeDetails<S> {
+    fn clone(&self) -> Self {
+        Self { 
+            trading_entity: self.trading_entity.clone(), 
+            mutable_details: self.mutable_details.clone(), 
+            trade_date: self.trade_date.clone(), 
+            strike: self.strike.clone(), 
+            _state: PhantomData
+        }
+    }
+}
+
 impl<S: CancellableState> TradeDetails<S> {
     pub fn cancel<U: Transitioner>(self, user: &U) -> U::TransitionResult<S, Cancelled> {
         user.transition(self, |_| {}, TradeAction::Cancel)
@@ -291,7 +303,6 @@ impl TradeDetails<PendingApproval> {
             approver.transition::<PendingApproval, NeedsReapproval>(
                 self,
                 |details| {
-                    // TODO: Find difference, append to history
                     details.mutable_details = new_details;
                 },
                 TradeAction::Update
@@ -326,7 +337,6 @@ impl TradeDetails<SentToCounterparty> {
         user: &U
     ) -> U::TransitionResult<SentToCounterparty, Executed> {
         let mutation = |s: &mut Self| -> () {
-            // TODO: Append new strike_price to history
             s.strike = Some(strike_price);
         };
         user.transition::<SentToCounterparty, Executed>(self, mutation, TradeAction::Book)

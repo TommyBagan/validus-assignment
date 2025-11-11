@@ -1,9 +1,5 @@
 use std::fmt::{ Debug, Display };
 
-use chrono::{ DateTime, Utc };
-
-use crate::{ trade::{ TradeDetails, TradeDetailsDiff }, users::{ Transitioner, User } };
-
 /// This trait is a marker trait, that acts as our for
 /// our generic for the type state pattern.
 /// The type state pattern allows us to enforce that
@@ -105,7 +101,7 @@ impl TradeState for Cancelled {
     const NAME: &'static str = "Cancelled";
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum TradeAction {
     Cancel,
     Submit,
