@@ -148,8 +148,9 @@ mod tests {
         assert!(our_history.get_record(1).is_none());
     }
 
+    // Recommend this test is run with `cargo test -- --test-threads=1 --ignored`
     #[test]
-    #[ignore = "This test is only reliable when ran in a single thread."]
+    #[ignore = "This test is only reliable when there is only one test thread."]
     fn update_history() {
         {
             HISTORY.lock().unwrap().clear();
@@ -189,5 +190,7 @@ mod tests {
         assert_eq!(record.action, TradeAction::Update);
         assert_eq!(record.user_id, approver.to_string());
         assert!(record.changes().is_some());
+        assert!(record.changes().unwrap().changed_direction().is_some());
+        assert!(record.changes().unwrap().changed_amount().is_none());
     }
 }
