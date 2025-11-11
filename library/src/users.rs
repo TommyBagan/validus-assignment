@@ -3,7 +3,7 @@ use std::{
     marker::PhantomData,
 };
 
-use crate::{state::TradeState, trade::TradeDetails};
+use crate::{error::UnauthorisedRequester, state::TradeState, trade::TradeDetails};
 
 pub trait Permission: Debug + PartialEq + Eq {}
 
@@ -32,6 +32,15 @@ impl<P: Permission> Display for User<P> {
     }
 }
 
+impl<P: Permission> User<P> {
+    pub fn sign_in(id: &str) -> Self {
+        Self {
+            id: id.to_string(),
+            _permission: PhantomData
+        }
+    }
+}
+
 pub trait Transitioner {
     type TransitionResult<From: TradeState, To: TradeState>;
 
@@ -39,23 +48,32 @@ pub trait Transitioner {
         &self,
         details: TradeDetails<From>,
         mutation: impl Fn(&mut TradeDetails<From>) -> (),
+        action: &str
     ) -> Self::TransitionResult<From, To>;
 }
 
 impl Transitioner for User<Requester> {
     type TransitionResult<From: TradeState, To: TradeState> =
-        Result<TradeDetails<To>, TradeDetails<From>>;
+        Result<TradeDetails<To>, UnauthorisedRequester<From>>;
 
     fn transition<From: TradeState, To: TradeState>(
         &self,
         mut details: TradeDetails<From>,
         mutation: impl Fn(&mut TradeDetails<From>) -> (),
+        action: &str
     ) -> Self::TransitionResult<From, To> {
         if details.trading_entity != *self {
-            return Err(details);
+            return Err(
+                UnauthorisedRequester { 
+                    details: details, 
+                    requester: self.id.clone(), 
+                    action: action.to_string()
+                }
+            );
         }
         mutation(&mut details);
         Ok(details.force_transition::<To>())
+        // TODO: Log history
     }
 }
 
@@ -66,11 +84,10 @@ impl Transitioner for User<Approver> {
         &self,
         mut details: TradeDetails<From>,
         mutation: impl Fn(&mut TradeDetails<From>) -> (),
+        action: &str
     ) -> Self::TransitionResult<From, To> {
         mutation(&mut details);
         details.force_transition::<To>()
+        // TODO: Log history
     }
 }
-
-// TODO: Represent in memory storage of all potential users.
-// pub struct UserRegistry {}

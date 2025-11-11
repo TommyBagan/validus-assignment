@@ -6,7 +6,9 @@ use std::fmt::{Debug, Display};
 /// state transitions won't compile if incorrect; and this
 /// trait allows us to implement functions which work regardless
 /// of the state.
-pub trait TradeState: Debug + Display {}
+pub trait TradeState: Debug + Display {
+    const NAME: &'static str;
+}
 
 /// For any state which implements this marker trait, the trade its associated with can be cancelled.
 pub trait CancellableState: TradeState {}
@@ -16,20 +18,24 @@ pub struct Draft;
 
 impl Display for Draft {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Draft")
+        write!(f, "{}", Self::NAME)
     }
 }
-impl TradeState for Draft {}
+impl TradeState for Draft {
+    const NAME: &'static str = "Draft";
+}
 
 #[derive(Debug)]
 pub struct PendingApproval;
 
 impl Display for PendingApproval {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "PendingApproval")
+        write!(f, "{}", Self::NAME)
     }
 }
-impl TradeState for PendingApproval {}
+impl TradeState for PendingApproval {
+    const NAME: &'static str = "PendingApproval";
+}
 impl CancellableState for PendingApproval {}
 
 #[derive(Debug)]
@@ -37,10 +43,12 @@ pub struct NeedsReapproval;
 
 impl Display for NeedsReapproval {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "NeedsReapproval")
+        write!(f, "{}", Self::NAME)
     }
 }
-impl TradeState for NeedsReapproval {}
+impl TradeState for NeedsReapproval {
+    const NAME: &'static str = "NeedsReapproval";
+}
 impl CancellableState for NeedsReapproval {}
 
 #[derive(Debug)]
@@ -48,10 +56,12 @@ pub struct Approved;
 
 impl Display for Approved {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Approved")
+        write!(f, "{}", Self::NAME)
     }
 }
-impl TradeState for Approved {}
+impl TradeState for Approved {
+    const NAME: &'static str = "Approved";
+}
 impl CancellableState for Approved {}
 
 #[derive(Debug)]
@@ -59,10 +69,12 @@ pub struct SentToCounterparty;
 
 impl Display for SentToCounterparty {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "SentToCounterparty")
+        write!(f, "{}", Self::NAME)
     }
 }
-impl TradeState for SentToCounterparty {}
+impl TradeState for SentToCounterparty {
+    const NAME: &'static str = "SentToCounterparty";
+}
 impl CancellableState for SentToCounterparty {}
 
 #[derive(Debug)]
@@ -70,17 +82,21 @@ pub struct Executed;
 
 impl Display for Executed {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Executed")
+        write!(f, "{}", Self::NAME)
     }
 }
-impl TradeState for Executed {}
+impl TradeState for Executed {
+    const NAME: &'static str = "Executed";
+}
 
 #[derive(Debug)]
 pub struct Cancelled;
 
 impl Display for Cancelled {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "Cancelled")
+        write!(f, "{}", Self::NAME)
     }
 }
-impl TradeState for Cancelled {}
+impl TradeState for Cancelled {
+    const NAME: &'static str = "Cancelled";
+}
