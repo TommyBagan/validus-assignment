@@ -66,7 +66,7 @@ impl Transitioner for User<Requester> {
             return Err(UnauthorisedRequester {
                 requester: self.id.clone(),
                 action: action.to_string(),
-                _state: PhantomData
+                _state: PhantomData,
             });
         }
         mutation(&mut details);

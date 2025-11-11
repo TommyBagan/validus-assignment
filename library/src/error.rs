@@ -1,4 +1,4 @@
-use std::{ error::Error, fmt::{self, Display}, marker::PhantomData };
+use std::{ error::Error, fmt::{ self, Display }, marker::PhantomData };
 
 use crate::{ state::TradeState };
 

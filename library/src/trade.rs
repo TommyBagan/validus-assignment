@@ -5,7 +5,7 @@ use iso_currency::Currency;
 
 use crate::{ error::{ InvalidDetails, UnauthorisedRequester }, state::*, users::* };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Counterparty(String);
 
 impl Display for Counterparty {
@@ -14,7 +14,7 @@ impl Display for Counterparty {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Style(String);
 
 impl Display for Style {
@@ -23,13 +23,13 @@ impl Display for Style {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Direction {
     BUY,
     SELL,
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct MutTradeDetails {
     /// The entity on the other side of the trade.
     pub counterparty: Counterparty,
@@ -55,6 +55,71 @@ pub struct MutTradeDetails {
 
     /// The date when the trade assets are delivered.
     pub delivery_date: DateTime<Utc>,
+}
+
+#[derive(Debug, Default)]
+pub(crate) struct TradeDetailsDiff {
+    pub(crate) counterparty: Option<(Counterparty, Counterparty)>,
+
+    pub(crate) direction: Option<(Direction, Direction)>,
+
+    pub(crate) style: Option<(Style, Style)>,
+
+    pub(crate) notional_currency: Option<(Currency, Currency)>,
+
+    pub(crate) notional_amount: Option<(u128, u128)>,
+
+    pub(crate) underlying: Option<(Vec<Currency>, Vec<Currency>)>,
+
+    pub(crate) value_date: Option<(DateTime<Utc>, DateTime<Utc>)>,
+
+    pub(crate) delivery_date: Option<(DateTime<Utc>, DateTime<Utc>)>,
+
+    pub(crate) strike: Option<u128>,
+}
+
+impl TradeDetailsDiff {
+    pub(crate) fn new<From: TradeState, To: TradeState>(
+        from_details: &TradeDetails<From>,
+        to_details: &TradeDetails<To>
+    ) -> Option<Self> {
+        let from: &MutTradeDetails = &from_details.mutable_details;
+        let to: &MutTradeDetails = &to_details.mutable_details;
+        if from == to && to_details.strike.is_none() {
+            return None;
+        }
+
+        let mut diff: Self = Self::default();
+        if from.counterparty != to.counterparty {
+            diff.counterparty = Some((from.counterparty.clone(), to.counterparty.clone()));
+        }
+        if from.direction != to.direction {
+            diff.direction = Some((from.direction.clone(), to.direction.clone()));
+        }
+        if from.style != to.style {
+            diff.style = Some((from.style.clone(), to.style.clone()));
+        }
+        if from.notional_currency != to.notional_currency {
+            diff.notional_currency = Some((
+                from.notional_currency.clone(),
+                to.notional_currency.clone(),
+            ));
+        }
+        if from.notional_amount != to.notional_amount {
+            diff.notional_amount = Some((from.notional_amount, to.notional_amount));
+        }
+        if from.underlying != to.underlying {
+            diff.underlying = Some((from.underlying.clone(), to.underlying.clone()));
+        }
+        if from.value_date != to.value_date {
+            diff.value_date = Some((from.value_date.clone(), to.value_date.clone()));
+        }
+        if from.delivery_date != to.delivery_date {
+            diff.delivery_date = Some((from.delivery_date.clone(), to.delivery_date.clone()));
+        }
+        diff.strike = to_details.strike;
+        Some(diff)
+    }
 }
 
 #[derive(Debug)]
@@ -330,7 +395,10 @@ mod tests {
         let approver: User<Approver> = User::sign_in("Admin");
         let mut new_details: MutTradeDetails = details.grab_mut_details();
         new_details.direction = Direction::SELL;
-        let wrapped_details: Result<TradeDetails<NeedsReapproval>, _> = details.update(&approver, new_details);
+        let wrapped_details: Result<TradeDetails<NeedsReapproval>, _> = details.update(
+            &approver,
+            new_details
+        );
         assert!(wrapped_details.is_ok());
         let details: TradeDetails<NeedsReapproval> = wrapped_details.unwrap();
 

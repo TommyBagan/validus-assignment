@@ -1,6 +1,13 @@
-use std::fmt::{Debug, Display};
+use std::fmt::{ Debug, Display };
 
-/// This trait is a marker trait, that acts as our for  
+use chrono::{ DateTime, Utc };
+
+use crate::{
+    trade::{ MutTradeDetailsDiff, TradeDetails, TradeDetailsDiff },
+    users::{ Transitioner, User },
+};
+
+/// This trait is a marker trait, that acts as our for
 /// our generic for the type state pattern.
 /// The type state pattern allows us to enforce that
 /// state transitions won't compile if incorrect; and this
@@ -101,7 +108,6 @@ impl TradeState for Cancelled {
     const NAME: &'static str = "Cancelled";
 }
 
-
 #[derive(Debug)]
 pub enum TradeAction {
     Cancel,
@@ -110,7 +116,7 @@ pub enum TradeAction {
     Update,
     Approve,
     SendToExecute,
-    Book
+    Book,
 }
 
 impl ToString for TradeAction {
@@ -125,5 +131,33 @@ impl ToString for TradeAction {
             TradeAction::Book => "book",
         };
         x.to_string()
+    }
+}
+
+#[derive(Debug)]
+pub(crate) struct HistoricalRecord {
+    timestamp: DateTime<Utc>,
+    action: TradeAction,
+    user_id: String,
+    state_before: &'static str,
+    state_after: &'static str,
+    difference: Option<MutTradeDetailsDiff>,
+}
+
+impl HistoricalRecord {
+    pub(crate) fn new<From: TradeState, To: TradeState, U: Transitioner>(
+        action: TradeAction,
+        id: String,
+        from: &TradeDetails<From>,
+        to: &TradeDetails<To>
+    ) -> Self {
+        Self {
+            timestamp: Utc::now(),
+            action: action,
+            user_id: id,
+            state_before: From::NAME,
+            state_after: To::NAME,
+            difference: TradeDetailsDiff::new(from, to),
+        }
     }
 }
