@@ -15,6 +15,7 @@ pub trait TradeState: Debug + Display {
 pub trait CancellableState: TradeState {}
 
 #[derive(Debug)]
+/// The trade has been created but not submitted.
 pub struct Draft;
 
 impl Display for Draft {
@@ -28,6 +29,7 @@ impl TradeState for Draft {
 }
 
 #[derive(Debug)]
+/// The trade has been submitted and is awaiting approval.
 pub struct PendingApproval;
 
 impl Display for PendingApproval {
@@ -42,6 +44,8 @@ impl TradeState for PendingApproval {
 impl CancellableState for PendingApproval {}
 
 #[derive(Debug)]
+/// The trade details were updated by the approver, requiring
+/// reapproval from the original requester.
 pub struct NeedsReapproval;
 
 impl Display for NeedsReapproval {
@@ -56,6 +60,8 @@ impl TradeState for NeedsReapproval {
 impl CancellableState for NeedsReapproval {}
 
 #[derive(Debug)]
+/// The trade has been approved and is ready to send to the
+/// counterparty.
 pub struct Approved;
 
 impl Display for Approved {
@@ -70,6 +76,7 @@ impl TradeState for Approved {
 impl CancellableState for Approved {}
 
 #[derive(Debug)]
+/// The trade has been sent to the counterparty for execution.
 pub struct SentToCounterparty;
 
 impl Display for SentToCounterparty {
@@ -84,6 +91,7 @@ impl TradeState for SentToCounterparty {
 impl CancellableState for SentToCounterparty {}
 
 #[derive(Debug)]
+/// The trade has been executed and booked.
 pub struct Executed;
 
 impl Display for Executed {
@@ -97,6 +105,7 @@ impl TradeState for Executed {
 }
 
 #[derive(Debug)]
+/// The trade has been cancelled.
 pub struct Cancelled;
 
 impl Display for Cancelled {

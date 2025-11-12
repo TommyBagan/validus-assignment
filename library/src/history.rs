@@ -102,10 +102,12 @@ impl HistoricalRecord {
     }
 }
 
+/// Retrieves the relevant record from the trade submission history.
 pub fn get_historical_record(step: usize) -> Option<HistoricalRecord> {
     HISTORY.lock().unwrap().get_record(step)
 }
 
+/// Total amount of trade submission changes made.
 pub fn total_historical_record_count() -> usize {
     HISTORY.lock().unwrap().total_record_count()
 }

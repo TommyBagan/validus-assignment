@@ -2,77 +2,35 @@
 
 ## Overview
 
-The aim of this exercise is to develop a trade approval system, enabling users to submit trade details for approval per some established protocol, and for our system to support various workflows given their trade details.
+The aim of this exercise is to develop a trade approval system, enabling users to submit trade details for approval per some established protocol, and for the system to support various workflows given their trade details.
 
-## Users
+## Prerequisites
 
-In this workflow, there are 2 types of users with different access levels.
+- Protobuf compiler `protoc`, developed on my Debian machine with libprotobuf.
+- Standard rust tools (`cargo`, `rustc` etc).
 
-- Requesters, who can make trade requests.
-- Approvers, who are the arbiters of each trade request.
+## Deliverables Met
 
-### Requesters
+I consider this assignment complete in that it has met all its deliverables:
 
-Requester users can:
+- I've implemented the workflow in Rust, with the API library and example simple gRPC service in seperate subcrates.
 
-- Submit a new trade request.
-- Cancel their trade requests.
-- Approve updates to their trade request details by an Approver.
-- Request updates to their trade request details.
-- Book trades into the system once executed by the 3rd party.
+- Implemented simple unit tests which can be ran with `cargo test`, and one of the unit tests in `history.rs` will need to be ran with `cargo test -- --test-threads=1 --ignored`
 
-These actions are labelled as `REQUEST_NEW, APPROVE_UPDATE, CANCEL, REQUEST_UPDATE, BOOK`.
+- I've provided code documentation for the API, and both the example gRPC service and library integration test `example.rs` aswell.
 
-### Approver
+## Reflection
 
-Approver users can:
+As much as time constraints were a major hinderence to scope for this assignment, I think it's important to recognize areas of improvement. Here are some things in retrospect I think I could've done better:
 
-- Approve new trade requests.
-- Cancel other's trade requests.
-- Send approved trades to the counterparty for execution.
+- Started with the gRPC service definintions to layout the problem space instead of the library. It would have lead me down a different path, not following a generic type state pattern but potentially one that would permit dynamic dispatch.
 
-These actions are labelled as `APPROVE_NEW, CANCEL, SEND_TO_EXECUTE, BOOK`.
+- Could have provided a better mocked security, and treated the "approver" and "requester" more as roles instead of mutually exclusive states (imagine you could have a user that is both a "requester" and "approver").
 
-## Trade Detail Format
+When considering what went well, here are some areas of the assignment I'm happy with:
 
-- `trading_entity` ~ Legal entity conducting the trade.
-- `counterparty` ~ Legal entity on the other side of the trade.
-- `direction` ~ Buy or Sell.
-- `style` ~ "Assumes the trade is a forward contract."
-- `notional_currency` ~ IBAN currency code.
-- `notional_amount` ~ Size of the trade in the `notional_currency`.
-- `underlying` ~ List of eligible notional currencies; which the `notional_currency` must be a member of.
-- `trade_date` ~ Date when the trade is initiated.
-- `value_date` ~ Date when the trade value is realized.
-- `delivery_date` ~ Date when assets are delivered.
-- `strike` ~ Agreed rate of the trade, only available after trades are executed.
+- Pursued a type state pattern when designing the library, relying on Rust's compile time checks to ensure state machine consistency.
 
-Note that `trade_date` < `value_date` < `delivery_date`.
+- A multi-threaded environment was considered for the History API.
 
-## State Transitions
-
-Trades can transition between states.
-
-- `DRAFT` ~ Trade has been created but not submitted. Permitted next actions: `[SUBMIT]`.
-- `PENDING_APPROVAL` ~ Trade has been submitted but is waiting approval. Permitted next actions: `[ACCEPT, CANCEL]`
-- `NEEDS_REAPPROVAL` ~ Trade details were updated by an Approver, requiring reapproval from the original requester. Permitted next actions: `[APPROVE, CANCEL]`.
-- `APPROVED` ~ Trade has been approved and is ready to be sent. Permitted next actions: `[SEND_TO_EXECUTE, CANCEL]`.
-- `SEND_TO_COUNTERPARTY` ~ Trade has been sent to the counterparty. Permitted next actions: `[BOOK, CANCEL]`.
-- `EXECUTED` ~ Trade has been executed. This is an end state, and it's implied all `BOOK` actions lead to this final state.
-- `CANCELLED` ~ Trade has been cancelled. This is an end state, and it's implied all `CANCEL` actions lead to this final state.
-
-## Requirements
-
-- All data is stored in memory, if the process dies all information will be lost.
-- This API is written in Rust.
-- Validation rules and trade details are enforced.
-- Users are also able to make requests to view history of trades, including:
-  - Trade details at any previous state.
-  - Tabular history of actions with user IDs, timestamps and state transitions.
-  - Differences to versions of trade details.
-- Trades can be sent to a counterparty and marked as executed.
-
-Other potential features we can do with this project:
-
-- Defining a gRPC API to expose this as a service.
-- Let users revert some changes instead of just cancelling. Note this will have some authorization constraints.
+- Was able to extend past the requirements by implementing a gRPC server.

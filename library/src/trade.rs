@@ -7,6 +7,7 @@ use tonic::Status;
 use crate::{ error::{ InvalidDetails, UnauthorisedRequester }, state::*, users::* };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// The entity on the other side of the trade.
 pub struct Counterparty(pub String);
 
 impl Display for Counterparty {
@@ -25,6 +26,7 @@ impl Display for Style {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Specifies whether the trade is a "Buy" or "Sell".
 pub enum Direction {
     BUY,
     SELL,
@@ -285,6 +287,28 @@ impl<S: TradeState> TradeDetails<S> {
         Ok(())
     }
 
+    /// Creates a Draft Trade Request.
+    /// 
+    /// `user` - The legal entity conducting the trade.
+    /// 
+    /// `counterparty` - The entity on the other side of the trade.
+    /// 
+    /// `direction` - Specifies whether the trade is a "Buy" or "Sell".
+    /// 
+    /// `style` - Assumes the trade is a forward contract.
+    /// 
+    /// `currency` - Currency of the notional amount (e.g., EUR, GBP, USD). 
+    /// The full list is available at IBAN Currency Codes.
+    /// 
+    /// `amount` - The size of the trade in the selected notional currency.
+    /// 
+    /// `underlying` - A combination of eligible notional currencies. 
+    /// The notional currency selected must be part of the underlying.
+    /// 
+    /// `value_date` - The date when the trade value is realized.
+    /// 
+    /// `delivery_date` - The date when the trade assets are delivered.
+    /// 
     pub fn new(
         user: &User<Requester>,
         counterparty: Counterparty,
@@ -540,6 +564,28 @@ pub(crate) mod tests {
         // Book
         let wrapped_details: Result<TradeDetails<Executed>, _> = details.book(1000, &requester);
         assert!(wrapped_details.is_ok());
+    }
+    
+    #[test]
+    fn cancelled_last_minute() {
+        // Draft
+        let requester: User<Requester> = User::sign_in("TestUser");
+        let details: TradeDetails<Draft> = mock_draft(&requester);
+
+        // Submit
+        let wrapped_details: Result<TradeDetails<PendingApproval>, _> = details.submit(&requester);
+        assert!(wrapped_details.is_ok());
+        let details: TradeDetails<PendingApproval> = wrapped_details.unwrap();
+
+        // Approve
+        let approver: User<Approver> = User::sign_in("Admin");
+        let details: TradeDetails<Approved> = details.accept(&approver);
+
+        // Send To Execute
+        let details: TradeDetails<SentToCounterparty> = details.send_to_execute(&approver);
+
+        // Cancel
+        let _: TradeDetails<Cancelled> = details.cancel(&approver);
     }
 
     #[test]
