@@ -1,5 +1,7 @@
 use std::{ error::Error, fmt::{ self, Display }, marker::PhantomData };
 
+use tonic::Status;
+
 use crate::{ state::TradeState };
 
 #[derive(Debug)]
@@ -22,6 +24,12 @@ impl<S: TradeState> Display for UnauthorisedRequester<S> {
 }
 impl<S: TradeState> Error for UnauthorisedRequester<S> {}
 
+impl<S: TradeState> Into<Status> for UnauthorisedRequester<S> {
+    fn into(self) -> Status {
+        Status::unauthenticated(format!("{}", self))
+    }
+}
+
 #[derive(Debug)]
 pub struct InvalidDetails {
     pub(crate) issue: String,
@@ -33,3 +41,9 @@ impl Display for InvalidDetails {
     }
 }
 impl Error for InvalidDetails {}
+
+impl Into<Status> for InvalidDetails {
+    fn into(self) -> Status {
+        Status::invalid_argument(format!("{}.", self.issue))
+    }
+}

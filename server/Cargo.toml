@@ -5,3 +5,13 @@ edition.workspace = true
 
 [dependencies]
 library = { path = "../library" }
+prost = "0.14.1"
+tokio = { version = "1.48.0", features = ["rt-multi-thread"] }
+tonic = { workspace = true }
+tonic-prost = "0.14.2"
+uuid = { version = "1.18.1", features = ["v4"] }
+iso_currency = { workspace = true }
+chrono = { workspace = true }
+
+[build-dependencies]
+tonic-prost-build = "0.14.2"

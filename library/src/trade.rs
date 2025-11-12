@@ -2,11 +2,12 @@ use std::{ fmt::Display, marker::PhantomData };
 
 use chrono::{ DateTime, Utc };
 use iso_currency::Currency;
+use tonic::Status;
 
 use crate::{ error::{ InvalidDetails, UnauthorisedRequester }, state::*, users::* };
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Counterparty(String);
+pub struct Counterparty(pub String);
 
 impl Display for Counterparty {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -15,7 +16,7 @@ impl Display for Counterparty {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct Style(String);
+pub struct Style(pub String);
 
 impl Display for Style {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -27,6 +28,27 @@ impl Display for Style {
 pub enum Direction {
     BUY,
     SELL,
+}
+
+impl Into<i32> for &Direction {
+    fn into(self) -> i32 {
+        match self {
+            &Direction::BUY => 0,
+            &Direction::SELL => 1,
+        }
+    }
+}
+
+impl TryFrom<i32> for Direction {
+    type Error = Status;
+
+    fn try_from(value: i32) -> Result<Self, Self::Error> {
+        match value {
+            0 => Ok(Self::BUY),
+            1 => Ok(Self::SELL),
+            _ => { Err(Status::invalid_argument("Direction must either be BUY or SELL")) }
+        }
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -44,7 +66,7 @@ pub struct MutTradeDetails {
     pub notional_currency: Currency,
 
     /// The size of the trade in the selected notional currency.
-    pub notional_amount: u128,
+    pub notional_amount: u64,
 
     /// A combination of eligible notional currencies.
     /// The notional currency selected must be part of the underlying.
@@ -67,7 +89,7 @@ pub struct TradeDetailsDiff {
 
     pub(crate) notional_currency: Option<(Currency, Currency)>,
 
-    pub(crate) notional_amount: Option<(u128, u128)>,
+    pub(crate) notional_amount: Option<(u64, u64)>,
 
     pub(crate) underlying: Option<(Vec<Currency>, Vec<Currency>)>,
 
@@ -75,7 +97,7 @@ pub struct TradeDetailsDiff {
 
     pub(crate) delivery_date: Option<(DateTime<Utc>, DateTime<Utc>)>,
 
-    pub(crate) strike: Option<u128>,
+    pub(crate) strike: Option<u64>,
 }
 
 impl TradeDetailsDiff {
@@ -95,7 +117,7 @@ impl TradeDetailsDiff {
         self.notional_currency.as_ref()
     }
 
-    pub fn changed_amount(&self) -> Option<(u128,u128)> {
+    pub fn changed_amount(&self) -> Option<(u64, u64)> {
         self.notional_amount
     }
 
@@ -107,11 +129,11 @@ impl TradeDetailsDiff {
         self.value_date.as_ref()
     }
 
-    pub fn changed_delivery_date(&self) -> Option<&(DateTime<Utc>,DateTime<Utc>)> {
+    pub fn changed_delivery_date(&self) -> Option<&(DateTime<Utc>, DateTime<Utc>)> {
         self.delivery_date.as_ref()
     }
 
-    pub fn changed_strike(&self) -> Option<u128> {
+    pub fn changed_strike(&self) -> Option<u64> {
         self.strike
     }
 
@@ -170,12 +192,56 @@ pub struct TradeDetails<S = Draft> where S: TradeState {
     trade_date: DateTime<Utc>,
 
     /// Agreed rate. This information is only available after trades are executed.
-    strike: Option<u128>,
+    strike: Option<u64>,
 
     _state: PhantomData<S>,
 }
 
 impl<S: TradeState> TradeDetails<S> {
+    pub fn trading_entity(&self) -> &User<Requester> {
+        &self.trading_entity
+    }
+
+    pub fn counterparty(&self) -> &Counterparty {
+        &self.mutable_details.counterparty
+    }
+
+    pub fn direction(&self) -> &Direction {
+        &self.mutable_details.direction
+    }
+
+    pub fn style(&self) -> &Style {
+        &self.mutable_details.style
+    }
+
+    pub fn currency(&self) -> &Currency {
+        &self.mutable_details.notional_currency
+    }
+
+    pub fn amount(&self) -> u64 {
+        self.mutable_details.notional_amount
+    }
+
+    pub fn underlying(&self) -> &Vec<Currency> {
+        &self.mutable_details.underlying
+    }
+
+    pub fn value_date(&self) -> &DateTime<Utc> {
+        &self.mutable_details.value_date
+    }
+
+    pub fn delivery_date(&self) -> &DateTime<Utc> {
+        &self.mutable_details.delivery_date
+    }
+
+    pub fn trade_date(&self) -> &DateTime<Utc> {
+        &self.trade_date
+    }
+
+    pub fn strike(&self) -> Option<u64> {
+        self.strike
+    }
+
     /// This consumes self, creating a new type with the next transition.
     /// It isn't public, as it would allow a transition from any state to another.
     /// Once optimized, this should effectively be a noop.
@@ -225,7 +291,7 @@ impl<S: TradeState> TradeDetails<S> {
         direction: Direction,
         style: Style,
         currency: Currency,
-        amount: u128,
+        amount: u64,
         underlying: Vec<Currency>,
         value_date: DateTime<Utc>,
         delivery_date: DateTime<Utc>
@@ -259,12 +325,12 @@ impl<S: TradeState> TradeDetails<S> {
 
 impl<S: TradeState> Clone for TradeDetails<S> {
     fn clone(&self) -> Self {
-        Self { 
-            trading_entity: self.trading_entity.clone(), 
-            mutable_details: self.mutable_details.clone(), 
-            trade_date: self.trade_date.clone(), 
-            strike: self.strike.clone(), 
-            _state: PhantomData
+        Self {
+            trading_entity: self.trading_entity.clone(),
+            mutable_details: self.mutable_details.clone(),
+            trade_date: self.trade_date.clone(),
+            strike: self.strike.clone(),
+            _state: PhantomData,
         }
     }
 }
@@ -333,7 +399,7 @@ impl TradeDetails<Approved> {
 impl TradeDetails<SentToCounterparty> {
     pub fn book<U: Transitioner>(
         self,
-        strike_price: u128,
+        strike_price: u64,
         user: &U
     ) -> U::TransitionResult<SentToCounterparty, Executed> {
         let mutation = |s: &mut Self| -> () {
@@ -344,7 +410,7 @@ impl TradeDetails<SentToCounterparty> {
 }
 
 #[cfg(test)]
-pub (crate) mod tests {
+pub(crate) mod tests {
     use std::{ time::Duration };
 
     use super::*;
@@ -390,7 +456,7 @@ pub (crate) mod tests {
         }
     }
 
-    pub (crate) fn mock_draft(requester: &User<Requester>) -> TradeDetails<Draft> {
+    pub(crate) fn mock_draft(requester: &User<Requester>) -> TradeDetails<Draft> {
         let offset: Duration = Duration::from_secs(20);
         let value_date: DateTime<Utc> = Utc::now() + offset;
         let delivery_date: DateTime<Utc> = value_date + offset;

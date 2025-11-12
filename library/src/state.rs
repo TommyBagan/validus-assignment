@@ -8,6 +8,7 @@ use std::fmt::{ Debug, Display };
 /// of the state.
 pub trait TradeState: Debug + Display {
     const NAME: &'static str;
+    const ID: u8;
 }
 
 /// For any state which implements this marker trait, the trade its associated with can be cancelled.
@@ -23,6 +24,7 @@ impl Display for Draft {
 }
 impl TradeState for Draft {
     const NAME: &'static str = "Draft";
+    const ID: u8 = 0;
 }
 
 #[derive(Debug)]
@@ -35,6 +37,7 @@ impl Display for PendingApproval {
 }
 impl TradeState for PendingApproval {
     const NAME: &'static str = "PendingApproval";
+    const ID: u8 = 1;
 }
 impl CancellableState for PendingApproval {}
 
@@ -48,6 +51,7 @@ impl Display for NeedsReapproval {
 }
 impl TradeState for NeedsReapproval {
     const NAME: &'static str = "NeedsReapproval";
+    const ID: u8 = 2;
 }
 impl CancellableState for NeedsReapproval {}
 
@@ -61,6 +65,7 @@ impl Display for Approved {
 }
 impl TradeState for Approved {
     const NAME: &'static str = "Approved";
+    const ID: u8 = 3;
 }
 impl CancellableState for Approved {}
 
@@ -74,6 +79,7 @@ impl Display for SentToCounterparty {
 }
 impl TradeState for SentToCounterparty {
     const NAME: &'static str = "SentToCounterparty";
+    const ID: u8 = 4;
 }
 impl CancellableState for SentToCounterparty {}
 
@@ -87,6 +93,7 @@ impl Display for Executed {
 }
 impl TradeState for Executed {
     const NAME: &'static str = "Executed";
+    const ID: u8 = 5;
 }
 
 #[derive(Debug)]
@@ -99,6 +106,7 @@ impl Display for Cancelled {
 }
 impl TradeState for Cancelled {
     const NAME: &'static str = "Cancelled";
+    const ID: u8 = 6;
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]

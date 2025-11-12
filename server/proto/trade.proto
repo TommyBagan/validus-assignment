@@ -1,0 +1,66 @@
+syntax = "proto3";
+
+package trade;
+
+service TradeHandler {
+    rpc Status(TradeStatusRequest) returns (TradeStatusResponse);
+    rpc Submit(TradeSubmitRequest) returns (TradeSubmitResponse);
+}
+
+enum TradeStatus {
+    DRAFT = 0;
+    PENDING_APPROVAL = 1;
+    NEEDS_REAPPROVAL = 2;
+    APPROVED = 3;
+    SENT_TO_COUNTERPARTY = 4;
+    EXECUTED = 5;
+    CANCELLED = 6;
+}
+
+message TradeDetails {
+    Username trading_entity = 1;
+    MutableTradeDetails subdetails = 2;
+    string trade_date = 3;
+    uint64 strike = 4;
+}
+
+message MutableTradeDetails {
+    string counterparty = 1;
+    enum Direction {
+        BUY = 0;
+        SELL = 1;
+    }
+    Direction direction = 2;
+    string style = 3;
+    uint32 currency_code = 4;
+    uint64 currency_amount = 5;
+    repeated uint32 underlying_currency_codes = 6;
+    string value_date = 7;
+    string delivery_date = 8;
+}
+
+message Username {
+    string user_id = 1;
+}
+
+message TradeUUID {
+    string uuid = 1;
+}
+
+message TradeStatusRequest {
+    TradeUUID uuid = 1;
+}
+
+message TradeStatusResponse {
+    TradeDetails details = 1;
+    TradeStatus status = 2;
+}
+
+message TradeSubmitRequest {
+    Username info = 1;
+    MutableTradeDetails details = 2;
+}
+
+message TradeSubmitResponse {
+    TradeUUID uuid = 1;
+}
