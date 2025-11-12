@@ -112,8 +112,6 @@ pub fn total_historical_record_count() -> usize {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{ DateTime, Utc };
-
     use crate::{
         history::{
             HISTORY,
